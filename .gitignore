@@ -1,5 +1,2 @@
 .env
-test_alert.py
-test_db.py
-test_email.py
-test_full_alert.py
+tests/
