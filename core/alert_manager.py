@@ -28,7 +28,7 @@ class AlertManager:
         if speed_kmh <= self.threshold:
             return False
 
-        # Ignore duplicate alerts
+        # Ignore duplicate alerts in same run
         if vehicle_id in self.alerted_vehicle_ids:
             return False
 
@@ -37,17 +37,55 @@ class AlertManager:
         try:
 
             # ------------------------
-            # SAVE TO DATABASE
+            # CHECK EXISTING ALERT
             # ------------------------
-            alert = SpeedAlert(
-                vehicle_id=int(vehicle_id),
-                speed_kmh=round(float(speed_kmh), 2),
-                threshold_kmh=float(self.threshold),
-                alert_time=datetime.now(),
-                video_source=video_source
+            existing_alert = (
+                db.query(SpeedAlert)
+                .filter(
+                    SpeedAlert.vehicle_id == int(vehicle_id)
+                )
+                .first()
             )
 
-            db.add(alert)
+            # ------------------------
+            # UPDATE EXISTING
+            # ------------------------
+            if existing_alert:
+
+                existing_alert.speed_kmh = round(
+                    float(speed_kmh), 2
+                )
+
+                existing_alert.threshold_kmh = float(
+                    self.threshold
+                )
+
+                existing_alert.alert_time = datetime.now()
+
+                existing_alert.video_source = (
+                    video_source
+                )
+
+            # ------------------------
+            # INSERT NEW
+            # ------------------------
+            else:
+
+                alert = SpeedAlert(
+                    vehicle_id=int(vehicle_id),
+                    speed_kmh=round(
+                        float(speed_kmh), 2
+                    ),
+                    threshold_kmh=float(
+                        self.threshold
+                    ),
+                    alert_time=datetime.now(),
+                    video_source=video_source
+                )
+
+                db.add(alert)
+
+            # IMPORTANT
             db.commit()
 
             # ------------------------
@@ -59,8 +97,10 @@ class AlertManager:
                 threshold_kmh=self.threshold
             )
 
-            # Mark vehicle as alerted
-            self.alerted_vehicle_ids.add(vehicle_id)
+            # Prevent duplicate emails
+            self.alerted_vehicle_ids.add(
+                vehicle_id
+            )
 
             print(
                 f"[ALERT] Vehicle {vehicle_id} "
@@ -73,6 +113,8 @@ class AlertManager:
 
             print("❌ Alert processing failed")
             print(e)
+
+            db.rollback()
 
             return False
 
