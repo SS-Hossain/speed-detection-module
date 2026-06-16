@@ -107,7 +107,7 @@ speed_detection_module/
 ### 1. Clone Repository
 
 ```bash
-git clone https://github.com/<your-username>/<repo-name>.git
+git clone https://github.com/SS-Hossain/speed-detection-module.git
 
 cd speed_detection_module
 ```
